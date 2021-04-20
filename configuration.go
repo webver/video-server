@@ -37,9 +37,9 @@ type CorsConfiguration struct {
 
 // StreamArg Infromation about stream's source
 type StreamArg struct {
-	GUID        string   `json:"guid"`
-	URL         string   `json:"url"`
-	StreamTypes []string `json:"stream_types"`
+	GUID         string   `json:"guid"`
+	URL          string   `json:"url"`
+	StreamTypes  []string `json:"stream_types"`
 }
 
 // ServerConfiguration Configuration parameters for server
@@ -75,5 +75,6 @@ func NewConfiguration(fname string) (*ConfigurationArgs, error) {
 	if conf.HlsWindowSize > conf.HlsCapacity {
 		conf.HlsWindowSize = conf.HlsCapacity
 	}
+
 	return &conf, nil
 }

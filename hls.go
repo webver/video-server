@@ -9,12 +9,54 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/grafov/m3u8"
-	"github.com/LdDl/vdk/av"
-	"github.com/LdDl/vdk/format/ts"
 	"github.com/pkg/errors"
+	"github.com/deepch/vdk/av"
+	"github.com/deepch/vdk/format/ts"
 )
 
-func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, stopCast chan bool) error {
+func (app *Application) startHlsWorkerLoop(streamID uuid.UUID) {
+
+	for {
+		cuuid, viewer, err := app.clientAdd(streamID)
+		if err != nil {
+			log.Printf("Can't add client for '%s' due the error: %s\n", streamID, err.Error())
+			return
+		}
+
+		status, err := app.getStatus(streamID)
+		if err != nil {
+			log.Printf("Can't get status data for '%s' due the error: %s", streamID, err.Error())
+		}
+
+		codecData, err := app.codecGet(streamID)
+		if err != nil {
+			log.Printf("Can't get codec data for '%s' due the error: %s", streamID, err.Error())
+		}
+
+		if status && codecData != nil {
+			log.Printf("start HLS: %s\n", streamID)
+			err = app.startHls(streamID, viewer.c, viewer.status)
+			if err != nil {
+				log.Printf("Hls writer for '%s' stopped: %s", streamID, err.Error())
+			} else {
+				log.Printf("Hls writer for '%s' stopped", streamID)
+			}
+		} else {
+			log.Printf("Status is false or codec data is nil for '%s'", streamID)
+		}
+
+		app.clientDelete(streamID, cuuid)
+
+		if !app.exists(streamID) {
+			log.Printf("Close hls worker loop for '%s'", streamID)
+			return
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh chan bool) error {
 
 	err := ensureDir(app.HlsDirectory)
 	if err != nil {
@@ -23,7 +65,6 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, stopCast
 
 	// Create playlist for HLS streams
 	playlistFileName := filepath.Join(app.HlsDirectory, fmt.Sprintf("%s.m3u8", streamID))
-	log.Printf("Need to start HLS: %s\n", playlistFileName)
 	playlist, err := m3u8.NewMediaPlaylist(app.HlsWindowSize, app.HlsCapacity)
 	if err != nil {
 		return errors.Wrap(err, "Can't create new mediaplayer list")
@@ -83,9 +124,11 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, stopCast
 	segmentLoop:
 		for {
 			select {
-			case <-stopCast:
-				isConnected = false
-				break segmentLoop
+			case status := <-statusCh:
+				if status == false {
+					isConnected = false
+					break segmentLoop
+				}
 			case pck := <-ch:
 				if pck.Idx == videoStreamIdx && pck.IsKeyFrame {
 					start = true
@@ -110,6 +153,10 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, stopCast
 					segmentCount++
 				} else {
 					// fmt.Println("Current packet time < previous ")
+					if lastPacketTime-pck.Time > time.Second*10 {
+						isConnected = false
+						break segmentLoop
+					}
 				}
 			}
 		}
@@ -128,9 +175,14 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, stopCast
 		if err != nil {
 			log.Printf("Can't create playlist %s: %s\n", playlistFileName, err.Error())
 		}
-		playlistFile.Write(playlist.Encode().Bytes())
-		playlistFile.Close()
-		// log.Printf("m3u8 file has been re-created: %s\n", playlistFileName)
+		_, err = playlistFile.Write(playlist.Encode().Bytes())
+		if err != nil {
+			log.Printf("Can't write playlist %s: %s\n", playlistFileName, err.Error())
+		}
+		err = playlistFile.Close()
+		if err != nil {
+			log.Printf("Can't close playlist file %s: %s\n", playlistFileName, err.Error())
+		}
 
 		// Cleanup segments
 		if err := app.removeOutdatedSegments(streamID, playlist); err != nil {
