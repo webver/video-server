@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 
-	"github.com/google/uuid"
 	"github.com/deepch/vdk/av"
+	"github.com/google/uuid"
 )
 
 // Application Configuration parameters for application

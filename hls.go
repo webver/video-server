@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/deepch/vdk/av"
+	"github.com/deepch/vdk/format/ts"
 	"github.com/google/uuid"
 	"github.com/grafov/m3u8"
 	"github.com/pkg/errors"
-	"github.com/deepch/vdk/av"
-	"github.com/deepch/vdk/format/ts"
 )
 
 func (app *Application) startHlsWorkerLoop(streamID uuid.UUID) {
@@ -52,7 +52,7 @@ func (app *Application) startHlsWorkerLoop(streamID uuid.UUID) {
 			return
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 

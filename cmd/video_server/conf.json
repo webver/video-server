@@ -9,16 +9,7 @@
     "hls_window_size": 5,
     "hls_window_capacity" : 10,
     "streams": [
-        {
-            "guid": "37e8df8f-6062-489b-8fad-3b76952965d7",
-            "url": "rtsp://admin:admin@10.151.3.77:554/main",
-            "stream_types": [
-                "mse", "hls"
-            ],
-            "record_stream": true,
-            "file_size": 33554432,
-            "files_count": 100
-        },
+
         {
             "guid": "6c31f7bd-c842-4645-89b5-427b1a5b57ff",
             "url": "rtsp://admin:admin@10.151.3.71:554/main",
@@ -34,6 +25,5 @@
         "allow_headers": ["Origin", "Authorization", "Content-Type", "Content-Length", "Accept", "Accept-Encoding", "X-HttpRequest"],
         "expose_headers": ["Content-Length"],
         "allow_credentials":true
-    },
-    "mp4_directory": "mp4"
+    }
 }

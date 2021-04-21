@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/deepch/vdk/format/mp4f"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/deepch/vdk/format/mp4f"
 )
 
 func wshandler(wsUpgrader *websocket.Upgrader, w http.ResponseWriter, r *http.Request, app *Application) {
@@ -79,7 +79,7 @@ func wshandler(wsUpgrader *websocket.Upgrader, w http.ResponseWriter, r *http.Re
 				if err != nil {
 					q <- true
 					closeWSwithError(conn, 1011, fmt.Sprintf("Read message error: %s\n", err.Error()))
-					log.Printf("Read message error: %s\n", err.Error())
+					//log.Printf("Read message error: %s\n", err.Error())
 					return
 				}
 				if msgType == websocket.TextMessage && len(data) > 0 && string(data) == "ping" {
