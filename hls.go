@@ -148,6 +148,9 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 				}
 				if (pck.Idx == videoStreamIdx && pck.Time > lastPacketTime) || pck.Idx != videoStreamIdx {
 					if err = tsMuxer.WritePacket(pck); err != nil {
+						if errClose := outFile.Close(); errClose != nil {
+							log.Printf("Can't close file %s: %s\n", outFile.Name(), errClose.Error())
+						}
 						return errors.Wrap(err, fmt.Sprintf("Can't write packet for TS muxer for stream %s (2)", streamID))
 					}
 					if pck.Idx == videoStreamIdx {
