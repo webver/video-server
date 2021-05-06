@@ -12,6 +12,7 @@ const (
 	defaultHlsMsPerSegment = 10000
 	defaultHlsCapacity     = 10
 	defaultHlsWindowSize   = 5
+	defaultHlsMaxFileSize  = 268435456 //256MB
 )
 
 // ConfigurationArgs Configuration parameters for application as JSON-file
@@ -22,6 +23,7 @@ type ConfigurationArgs struct {
 	HlsDirectory    string              `json:"hls_directory"`
 	HlsWindowSize   uint                `json:"hls_window_size"`
 	HlsCapacity     uint                `json:"hls_window_capacity"`
+	HlsMaxFileSize  uint                `json:"hls_max_file_size"`
 	CorsConfig      CorsConfiguration   `json:"cors_config"`
 }
 
@@ -37,9 +39,9 @@ type CorsConfiguration struct {
 
 // StreamArg Infromation about stream's source
 type StreamArg struct {
-	GUID         string   `json:"guid"`
-	URL          string   `json:"url"`
-	StreamTypes  []string `json:"stream_types"`
+	GUID        string   `json:"guid"`
+	URL         string   `json:"url"`
+	StreamTypes []string `json:"stream_types"`
 }
 
 // ServerConfiguration Configuration parameters for server
@@ -74,6 +76,9 @@ func NewConfiguration(fname string) (*ConfigurationArgs, error) {
 	}
 	if conf.HlsWindowSize > conf.HlsCapacity {
 		conf.HlsWindowSize = conf.HlsCapacity
+	}
+	if conf.HlsMaxFileSize == 0 {
+		conf.HlsMaxFileSize = defaultHlsMaxFileSize
 	}
 
 	return &conf, nil

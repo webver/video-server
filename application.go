@@ -18,6 +18,7 @@ type Application struct {
 	HlsDirectory    string       `json:"hls_directory"`
 	HlsWindowSize   uint         `json:"hls_window_size"`
 	HlsCapacity     uint         `json:"hls_window_capacity"`
+	HlsMaxFileSize  uint         `json:"hls_max_file_size"`
 	CorsConfig      *cors.Config `json:"-"`
 }
 
@@ -74,6 +75,7 @@ func NewApplication(cfg *ConfigurationArgs) (*Application, error) {
 		HlsDirectory:    cfg.HlsDirectory,
 		HlsWindowSize:   cfg.HlsWindowSize,
 		HlsCapacity:     cfg.HlsCapacity,
+		HlsMaxFileSize:  cfg.HlsMaxFileSize,
 	}
 	if cfg.CorsConfig.UseCORS {
 		tmp.setCors(&cfg.CorsConfig)

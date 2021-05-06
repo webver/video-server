@@ -104,6 +104,7 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 		}
 
 		segmentLength := time.Duration(0)
+		fileSize := 0
 		packetLength := time.Duration(0)
 		segmentCount := 0
 		start := false
@@ -118,6 +119,7 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 			packetLength = lastKeyFrame.Time - lastPacketTime
 			lastPacketTime = lastKeyFrame.Time
 			segmentLength += packetLength
+			fileSize += len(lastKeyFrame.Data)
 			segmentCount++
 		}
 
@@ -137,6 +139,10 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 						break segmentLoop
 					}
 				}
+				if fileSize > int(app.HlsMaxFileSize) {
+					log.Printf("Hls max file size exceed for %s\n", streamID)
+					break segmentLoop
+				}
 				if !start {
 					continue
 				}
@@ -149,6 +155,7 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 						packetLength = pck.Time - lastPacketTime
 						lastPacketTime = pck.Time
 						segmentLength += packetLength
+						fileSize += len(pck.Data)
 					}
 					segmentCount++
 				} else {
