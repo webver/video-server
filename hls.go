@@ -77,13 +77,14 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 
 	for isConnected {
 		// Create new segment file
-		segmentName := fmt.Sprintf("%s%04d.ts", streamID, segmentNumber)
+		segmentName := fmt.Sprintf("%s-%10d.ts", streamID, time.Now().Unix())
 		segmentPath := filepath.Join(app.HlsDirectory, segmentName)
 		outFile, err := os.Create(segmentPath)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Can't create TS-segment for stream %s", streamID))
 		}
 		tsMuxer := ts.NewMuxer(outFile)
+		tsMuxer.PaddingToMakeCounterCont = true
 
 		// Write header
 		codecData, err := app.codecGet(streamID)
@@ -135,6 +136,7 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 				if pck.Idx == videoStreamIdx && pck.IsKeyFrame {
 					start = true
 					if segmentLength.Milliseconds() >= app.HlsMsPerSegment {
+						//log.Printf("Segment length %v", segmentLength)
 						lastKeyFrame = pck
 						break segmentLoop
 					}
@@ -155,7 +157,21 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 					}
 					if pck.Idx == videoStreamIdx {
 						// Evaluate segment length
-						packetLength = pck.Time - lastPacketTime
+						if lastPacketTime != 0 {
+							packetLength = pck.Time - lastPacketTime
+						} else {
+							packetLength = pck.Duration
+						}
+
+						//if packetLength > time.Second {
+						//	log.Printf("long packet Length %v", packetLength)
+						//}
+						//if packetLength > time.Second {
+						//	log.Printf("long packet Duration %v", pck.Duration)
+						//}
+						//if pck.CompositionTime > time.Second {
+						//	log.Printf("CompositionTime %v", pck.CompositionTime)
+						//}
 						lastPacketTime = pck.Time
 						segmentLength += packetLength
 						fileSize += len(pck.Data)
