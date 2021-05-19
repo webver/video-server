@@ -1,6 +1,7 @@
 package videoserver
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -13,6 +14,8 @@ import (
 	"github.com/grafov/m3u8"
 	"github.com/pkg/errors"
 )
+
+const writerBufferSize = 5242880
 
 func (app *Application) startHlsWorkerLoop(streamID uuid.UUID) {
 
@@ -80,10 +83,11 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 		segmentName := fmt.Sprintf("%s-%10d.ts", streamID, time.Now().Unix())
 		segmentPath := filepath.Join(app.HlsDirectory, segmentName)
 		outFile, err := os.Create(segmentPath)
+		writer := bufio.NewWriterSize(outFile, writerBufferSize)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Can't create TS-segment for stream %s", streamID))
 		}
-		tsMuxer := ts.NewMuxer(outFile)
+		tsMuxer := ts.NewMuxer(writer)
 		tsMuxer.PaddingToMakeCounterCont = true
 
 		// Write header
@@ -191,6 +195,10 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 			log.Printf("Can't write trailing data for TS muxer for %s: %s\n", streamID, err.Error())
 		}
 
+		if err := writer.Flush(); err != nil {
+			log.Printf("Can't flush writer to file %s: %s\n", outFile.Name(), err.Error())
+		}
+
 		if err := outFile.Close(); err != nil {
 			log.Printf("Can't close file %s: %s\n", outFile.Name(), err.Error())
 		}
@@ -218,28 +226,28 @@ func (app *Application) startHls(streamID uuid.UUID, ch chan av.Packet, statusCh
 		segmentNumber++
 	}
 
-	filesToRemove := make([]string, len(playlist.Segments)+1)
+	//filesToRemove := make([]string, len(playlist.Segments)+1)
+	//
+	//// Collect obsolete files
+	//for _, segment := range playlist.Segments {
+	//	if segment != nil {
+	//		filesToRemove = append(filesToRemove, segment.URI)
+	//	}
+	//}
+	//_, fileName := filepath.Split(playlistFileName)
+	//filesToRemove = append(filesToRemove, fileName)
 
-	// Collect obsolete files
-	for _, segment := range playlist.Segments {
-		if segment != nil {
-			filesToRemove = append(filesToRemove, segment.URI)
-		}
-	}
-	_, fileName := filepath.Split(playlistFileName)
-	filesToRemove = append(filesToRemove, fileName)
-
-	// Defered removement
-	go func(delay time.Duration, filesToRemove []string) {
-		time.Sleep(delay)
-		for _, file := range filesToRemove {
-			if file != "" {
-				if err := os.Remove(filepath.Join(app.HlsDirectory, file)); err != nil {
-					log.Printf("Can't call defered file remove: %s\n", err.Error())
-				}
-			}
-		}
-	}(time.Duration(app.HlsMsPerSegment*int64(playlist.Count()))*time.Millisecond, filesToRemove)
+	//// Defered removement
+	//go func(delay time.Duration, filesToRemove []string) {
+	//	time.Sleep(delay)
+	//	for _, file := range filesToRemove {
+	//		if file != "" {
+	//			if err := os.Remove(filepath.Join(app.HlsDirectory, file)); err != nil {
+	//				log.Printf("Can't call defered file remove: %s\n", err.Error())
+	//			}
+	//		}
+	//	}
+	//}(time.Duration(app.HlsMsPerSegment*int64(playlist.Count()))*time.Millisecond, filesToRemove)
 
 	return nil
 }
