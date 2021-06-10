@@ -2,7 +2,7 @@
   <div id="app" >
     <p>HLS player</p>
     <div>
-      <HLSPlayer schema="http" server="localhost" :port="8090" suuid="6c31f7bd-c842-4645-89b5-427b1a5b57ff" :verbose="false" />
+      <HLSPlayer schema="http" server="212.12.24.194" :port="36146" suuid="f1495814-8f88-4888-9ae8-0341e7064cda" :verbose="false" />
     </div>
   </div>
 </template>
