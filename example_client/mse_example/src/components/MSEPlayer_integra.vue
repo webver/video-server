@@ -189,7 +189,6 @@ module.exports = {
         this.pushPacket(data)
       }
     },
-
     start: function () {
       this.ws = new WebSocket(this.schema + "://" + this.server + ":" + this.port + "/live/" + this.suuid + "?login=" + this.user + "&password=" + this.password);
       //this.ws.binaryType = "arraybuffer";
